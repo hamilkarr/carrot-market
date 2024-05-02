@@ -6,7 +6,16 @@ const config: Config = {
         './components/**/*.{js,ts,jsx,tsx,mdx}',
         './app/**/*.{js,ts,jsx,tsx,mdx}',
     ],
-    theme: {},
-    plugins: [],
+    theme: {
+        extend: {
+            colors: {
+                primary: '#ff0000',
+            },
+            borderRadius: {
+                '4xl': '2rem',
+            },
+        },
+    },
+    plugins: [require('@tailwindcss/forms')],
 };
 export default config;
