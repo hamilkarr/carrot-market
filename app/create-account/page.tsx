@@ -11,24 +11,28 @@ export default function CreateAccount() {
             </div>
             <form className="flex flex-col gap-3">
                 <FormInput
+                name="username"
                     type="text"
                     placeholder="Username"
                     required
                     errors={["username is too short"]}
                 />
                 <FormInput
+                    name="email"
                     type="email"
                     placeholder="Email"
                     required
                     errors={[]}
                 />
                 <FormInput
+                    name="password"
                     type="password"
                     placeholder="Password"
                     required
                     errors={[]}
                 />
                 <FormInput
+                    name="confirm-password"
                     type="password"
                     placeholder="Confirm Password"
                     required
