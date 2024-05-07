@@ -22,7 +22,7 @@ export default function FormInput({
                 placeholder={placeholder}
                 required={required}
             />
-            <span className="text-red-500 font-medium">
+            <span className="text-red-500 font-medium flex flex-col gap-2">
                 {errors.map((error, index) => (
                     <span key={index} className="text-red-500 font-medium">
                         {error}
