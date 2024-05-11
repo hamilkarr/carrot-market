@@ -1,4 +1,9 @@
 'use server';
+import {
+    PASSWORD_MIN_LENGTH,
+    PASSWORD_REGEX,
+    PASSWORD_REGEX_ERROR,
+} from '@/lib/constants';
 import { z } from 'zod';
 
 const checkUsername = (username: string) => !username.includes('potato');
@@ -9,9 +14,6 @@ const checkPassword = ({
     password: string;
     confirmPassword: string;
 }) => password === confirmPassword;
-const passwordRegex = new RegExp(
-    /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).+$/
-);
 
 const formSchema = z
     .object({
@@ -20,7 +22,6 @@ const formSchema = z
                 invalid_type_error: 'Username must be a string',
                 required_error: 'Username is required',
             })
-            .min(3, 'Way too short!!')
             .trim()
             .transform((username) => `🔥${username}🔥`)
             .refine(checkUsername, 'custom error message'),
@@ -36,12 +37,9 @@ const formSchema = z
             ),
         password: z
             .string()
-            .min(5)
-            .regex(
-                passwordRegex,
-                'A password must have lower case, UPPER CASE, number, and special character'
-            ),
-        confirmPassword: z.string().min(5),
+            .min(PASSWORD_MIN_LENGTH)
+            .regex(PASSWORD_REGEX, PASSWORD_REGEX_ERROR),
+        confirmPassword: z.string().min(PASSWORD_MIN_LENGTH),
     })
     .refine(checkPassword, {
         message: "Passwords don't match",
@@ -57,7 +55,7 @@ export async function createAccount(prevState: any, formData: FormData) {
     };
     const result = formSchema.safeParse(data);
     if (!result.success) {
-        console.log(result.error.flatten());
+        // console.log(result.error.flatten());
         return result.error.flatten();
     } else {
         console.log(result.data);
