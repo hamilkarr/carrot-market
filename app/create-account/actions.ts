@@ -4,6 +4,7 @@ import {
     PASSWORD_REGEX,
     PASSWORD_REGEX_ERROR,
 } from '@/lib/constants';
+import db from '@/lib/db';
 import { z } from 'zod';
 
 const checkUsername = (username: string) => !username.includes('potato');
@@ -23,7 +24,7 @@ const formSchema = z
                 required_error: 'Username is required',
             })
             .trim()
-            .transform((username) => `🔥${username}🔥`)
+            // .transform((username) => `🔥${username}🔥`)
             .refine(checkUsername, 'custom error message'),
         email: z
             .string({
@@ -57,6 +58,27 @@ export async function createAccount(prevState: any, formData: FormData) {
     if (!result.success) {
         return result.error.flatten();
     } else {
-        console.log(result.data);
+        const user = await db.user.findUnique({
+            where: {
+                username: result.data.username,
+            },
+            select: {
+                id: true,
+            },
+        });
+        if (user) {
+            //show error to the user
+        }
+        const userEmail = await db.user.findUnique({
+            where: {
+                email: result.data.email,
+            },
+            select: {
+                id: true,
+            },
+        });
+        if (userEmail) {
+            //show error to the user
+        }
     }
 }
