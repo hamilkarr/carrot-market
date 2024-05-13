@@ -15,6 +15,28 @@ const checkPassword = ({
     password: string;
     confirmPassword: string;
 }) => password === confirmPassword;
+const checkUniqueUsername = async (username: string) => {
+    const user = await db.user.findUnique({
+        where: {
+            username,
+        },
+        select: {
+            id: true,
+        },
+    });
+    return !Boolean(user);
+};
+const checkUniqueEmail = async (email: string) => {
+    const user = await db.user.findUnique({
+        where: {
+            email,
+        },
+        select: {
+            id: true,
+        },
+    });
+    return Boolean(user) === false;
+};
 
 const formSchema = z
     .object({
@@ -25,7 +47,9 @@ const formSchema = z
             })
             .trim()
             // .transform((username) => `🔥${username}🔥`)
-            .refine(checkUsername, 'custom error message'),
+            .refine(checkUsername, 'custom error message')
+            .refine(checkUniqueUsername, 'This username is already taken'),
+
         email: z
             .string({
                 invalid_type_error: 'Email must be a string',
@@ -33,9 +57,8 @@ const formSchema = z
             })
             .trim()
             .toLowerCase()
-            .email(
-                'Invalid email address. Please enter a valid email address.'
-            ),
+            .email('Invalid email address. Please enter a valid email address.')
+            .refine(checkUniqueEmail, 'This email is already taken'),
         password: z
             .string()
             .min(PASSWORD_MIN_LENGTH)
@@ -54,31 +77,9 @@ export async function createAccount(prevState: any, formData: FormData) {
         password: formData.get('password'),
         confirmPassword: formData.get('confirm-password'),
     };
-    const result = formSchema.safeParse(data);
+    const result = await formSchema.safeParseAsync(data);
     if (!result.success) {
         return result.error.flatten();
     } else {
-        const user = await db.user.findUnique({
-            where: {
-                username: result.data.username,
-            },
-            select: {
-                id: true,
-            },
-        });
-        if (user) {
-            //show error to the user
-        }
-        const userEmail = await db.user.findUnique({
-            where: {
-                email: result.data.email,
-            },
-            select: {
-                id: true,
-            },
-        });
-        if (userEmail) {
-            //show error to the user
-        }
     }
 }
