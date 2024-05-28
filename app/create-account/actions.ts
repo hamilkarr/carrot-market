@@ -81,5 +81,11 @@ export async function createAccount(prevState: any, formData: FormData) {
     if (!result.success) {
         return result.error.flatten();
     } else {
+        // check if the user already exists
+        // check if the email already exists
+        // hash the password
+        // save the user to db
+        // log the user in
+        // redirect to "/home"
     }
 }
