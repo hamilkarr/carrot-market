@@ -1,7 +1,14 @@
 import db from '@/lib/db';
-import getSession from '@/lib/session';
+import { setSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { NextRequest } from 'next/server';
+
+interface Email {
+    email: string;
+    primary: boolean;
+    verified: boolean;
+    visibility: string | null;
+}
 
 class GitHubOAuthHandler {
     private clientId: string;
@@ -31,16 +38,20 @@ class GitHubOAuthHandler {
             access_token
         );
 
-        const allProfile = await this.fetchGitHubUserProfile(access_token);
+        const userEmails = await this.fetchGitHubUserEmails(access_token);
+        const primaryEmail = userEmails.find(
+            (email: Email) => email.primary && email.verified
+        );
 
-        console.table(allProfile);
+        // return Response.json(userEmails);
 
         const userId = await this.findOrCreateUser(
             String(id),
             avatar_url,
-            login
+            login,
+            primaryEmail.email ? primaryEmail.email : null
         );
-        await this.handleSession(userId);
+        await setSession(userId);
 
         return redirect('/profile');
     }
@@ -75,10 +86,22 @@ class GitHubOAuthHandler {
         return response.json();
     }
 
+    private async fetchGitHubUserEmails(access_token: string) {
+        const response = await fetch('https://api.github.com/user/emails', {
+            headers: {
+                Authorization: `Bearer ${access_token}`,
+            },
+            cache: 'no-cache',
+        });
+
+        return response.json();
+    }
+
     private async findOrCreateUser(
         githubId: string,
         avatarUrl: string,
-        username: string
+        login: string,
+        email: string | null
     ) {
         const user = await db.user.findUnique({
             where: {
@@ -89,27 +112,23 @@ class GitHubOAuthHandler {
             },
         });
         if (user) {
-            return Number(user.id);
+            return user.id;
         }
 
         const newUser = await db.user.create({
             data: {
-                username: username,
                 github_id: githubId,
                 avatar: avatarUrl,
+                email: email,
+                username:
+                    login + '-github-' + Math.floor(Math.random() * 100000000),
             },
             select: {
                 id: true,
             },
         });
 
-        return Number(newUser.id);
-    }
-
-    private async handleSession(userId: Number) {
-        const session = await getSession();
-        session.id = Number(userId);
-        await session.save();
+        return newUser.id;
     }
 }
 
