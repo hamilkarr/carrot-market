@@ -39,3 +39,6 @@ next-env.d.ts
 # DB
 *.db
 *.db-journal
+
+# IDE
+/.vscode
