@@ -23,22 +23,27 @@ export default function SMSLogIn() {
                     <Input
                         name="token"
                         type="number"
-                        placeholder="Verification Code"
+                        placeholder="Verification code"
+                        required
                         min={100000}
                         max={999999}
-                        required
+                        errors={state.error?.formErrors}
                     />
                 ) : (
                     <Input
                         name="phone"
                         type="text"
-                        placeholder="Phone Number"
+                        placeholder="Phone number"
                         required
                         errors={state.error?.formErrors}
                     />
                 )}
 
-                <Button text={state?.token ? "Verify Token" : "Send Verification SMS"} />
+                <Button
+                    text={
+                        state?.token ? 'Verify Token' : 'Send Verification SMS'
+                    }
+                />
             </form>
         </div>
     );
