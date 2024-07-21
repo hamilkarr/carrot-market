@@ -12,54 +12,42 @@ interface ActionState {
     token: boolean;
 }
 
-async function getToken() {
-    const token = crypto.randomInt(100000, 999999).toString();
-    const exists = await db.sMSToken.findUnique({
-        where: {
-            token,
-        },
-        select: {
-            id: true,
-        },
-    });
-    if (exists) {
-        return getToken();
-    } else {
-        return token;
+interface State {
+    handle(formData: FormData): Promise<{
+        token: boolean;
+        error?: z.typeToFlattenedError<string, string>;
+    }>;
+}
+
+class NoTokenState implements State {
+    private phoneSchema = z
+        .string()
+        .trim()
+        .refine(
+            (phone) => validator.isMobilePhone(phone, 'ko-KR'),
+            'Wrong phone format!'
+        );
+
+    private async getToken(): Promise<string> {
+        const token = crypto.randomInt(100000, 999999).toString();
+        const exists = await db.sMSToken.findUnique({
+            where: {
+                token,
+            },
+            select: {
+                id: true,
+            },
+        });
+        if (exists) {
+            return this.getToken();
+        } else {
+            return token;
+        }
     }
-}
 
-const phoneSchema = z
-    .string()
-    .trim()
-    .refine(
-        (phone) => validator.isMobilePhone(phone, 'ko-KR'),
-        'Wrong phone format!'
-    );
-
-async function tokenExists(token: number) {
-    const exists = await db.sMSToken.findUnique({
-        where: {
-            token: token.toString(),
-        },
-        select: {
-            id: true,
-        },
-    });
-    return Boolean(exists);
-}
-
-const tokenSchema = z.coerce
-    .number()
-    .min(100000)
-    .max(999999)
-    .refine(tokenExists, 'This token does not exist.');
-
-export async function smsLogin(prevState: ActionState, formData: FormData) {
-    const phone = formData.get('phone');
-    const token = formData.get('token');
-    if (!prevState.token) {
-        const result = phoneSchema.safeParse(phone);
+    async handle(formData: FormData) {
+        const phone = formData.get('phone');
+        const result = this.phoneSchema.safeParse(phone);
         if (!result.success) {
             return { token: false, error: result.error.flatten() };
         } else {
@@ -72,7 +60,7 @@ export async function smsLogin(prevState: ActionState, formData: FormData) {
                 },
             });
             // create token
-            const token = await getToken();
+            const token = await this.getToken();
             await db.sMSToken.create({
                 data: {
                     token,
@@ -101,14 +89,37 @@ export async function smsLogin(prevState: ActionState, formData: FormData) {
                 from: process.env.TWILIO_PHONE_NUMBER!,
                 to: process.env.TWILIO_MY_PHONE_NUMBER!,
             });
-            return { token: true, error: undefined };
+            return { token: true };
         }
-    } else {
-        const tokenResult = await tokenSchema.spa(token);
+    }
+}
+
+class HasTokenState implements State {
+    private tokenSchema = z.coerce
+        .number()
+        .min(100000)
+        .max(999999)
+        .refine(this.tokenExists.bind(this), 'This token does not exist.');
+
+    private async tokenExists(token: number) {
+        const exists = await db.sMSToken.findUnique({
+            where: {
+                token: token.toString(),
+            },
+            select: {
+                id: true,
+            },
+        });
+        return Boolean(exists);
+    }
+
+    async handle(formData: FormData) {
+        const token = formData.get('token');
+        const tokenResult = await this.tokenSchema.spa(token);
         if (!tokenResult.success) {
             return { token: true, error: tokenResult.error.flatten() };
         } else {
-            const token = await db.sMSToken.findUnique({
+            const tokenData = await db.sMSToken.findUnique({
                 where: {
                     token: tokenResult.data.toString(),
                 },
@@ -117,14 +128,21 @@ export async function smsLogin(prevState: ActionState, formData: FormData) {
                     userId: true,
                 },
             });
-            await setSession(token!.userId);
+            await setSession(tokenData!.userId);
             await db.sMSToken.delete({
                 where: {
-                    id: token!.id,
+                    id: tokenData!.id,
                 },
             });
 
             redirect('/profile');
         }
     }
+}
+
+export async function smsLogin(prevState: ActionState, formData: FormData) {
+    const state: State = prevState.token
+        ? new HasTokenState()
+        : new NoTokenState();
+    return await state.handle(formData);
 }

@@ -4,6 +4,7 @@ import Button from '@/components/button';
 import Input from '@/components/input';
 import { smsLogin } from './actions';
 import { useFormState } from 'react-dom';
+import { useEffect, useState } from 'react';
 
 const initialState = {
     token: false,
@@ -12,6 +13,17 @@ const initialState = {
 
 export default function SMSLogIn() {
     const [state, dispatch] = useFormState(smsLogin, initialState);
+    const [inputValue, setInputValue] = useState('');
+
+    useEffect(() => {
+        setInputValue('');
+    }, [state.token]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputValue(e.target.value);
+    };
+
+
     return (
         <div className="flex flex-col gap-10 py-8 px-6">
             <div className="flex flex-col gap-2 *:font-medium">
@@ -24,10 +36,13 @@ export default function SMSLogIn() {
                         name="token"
                         type="number"
                         placeholder="Verification code"
+                        autoComplete='off'
                         required
                         min={100000}
                         max={999999}
                         errors={state.error?.formErrors}
+                        value={inputValue}
+                        onChange={handleChange}
                     />
                 ) : (
                     <Input
@@ -36,6 +51,8 @@ export default function SMSLogIn() {
                         placeholder="Phone number"
                         required
                         errors={state.error?.formErrors}
+                        value={inputValue}
+                        onChange={handleChange}
                     />
                 )}
 
