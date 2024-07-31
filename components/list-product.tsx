@@ -1,6 +1,6 @@
-import Link from "next/link";
-import Image from "next/image";
-import { formatToTimeAgo, formatToWon } from "@/lib/utils";
+import Link from 'next/link';
+import Image from 'next/image';
+import { formatToTimeAgo, formatToWon } from '@/lib/utils';
 
 interface ListProductProps {
     title: string;
@@ -20,12 +20,21 @@ export default function ListProduct({
     return (
         <Link href={`/products/${id}`} className="flex gap-5">
             <figure className="relative size-28 rounded-md overflow-hidden">
-                <Image fill className="object-cover" src={photo} alt={title}/>
+                <Image
+                    fill
+                    className="object-cover"
+                    src={`${photo}/avatar`}
+                    alt={title}
+                />
             </figure>
             <div className="flex flex-col gap-1 *:text-white">
-                <span className="text-lg" >{title}</span>
-                <span className="text-sm text-neutral-500" >{formatToTimeAgo(create_at.toString())}</span>
-                <span className="text-lg font-semibold" >{formatToWon(price)}원</span>
+                <span className="text-lg">{title}</span>
+                <span className="text-sm text-neutral-500">
+                    {formatToTimeAgo(create_at.toString())}
+                </span>
+                <span className="text-lg font-semibold">
+                    {formatToWon(price)}원
+                </span>
             </div>
         </Link>
     );

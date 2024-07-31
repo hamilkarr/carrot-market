@@ -9,7 +9,7 @@ import { useFormState } from 'react-dom';
 
 export default function AddProduct() {
     const [preview, setPreview] = useState('');
-    const [uploadUrl, setUploadUrl] = useState('');
+    const [uploadURL, setUploadUrl] = useState('');
     const [photoId, setImageId] = useState('');
     const onImageChange = async (
         event: React.ChangeEvent<HTMLInputElement>
@@ -47,7 +47,7 @@ export default function AddProduct() {
         }
         const cloudFlareForm = new FormData();
         cloudFlareForm.append('file', file);
-        const response = await fetch(uploadUrl, {
+        const response = await fetch(uploadURL, {
             method: 'POST',
             body: cloudFlareForm,
         });
