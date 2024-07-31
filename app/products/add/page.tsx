@@ -4,12 +4,16 @@ import Button from '@/components/button';
 import Input from '@/components/input';
 import { PhotoIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
-import uploadProduct from './actions';
+import { getUploadUrl, uploadProduct } from './actions';
 import { useFormState } from 'react-dom';
 
 export default function AddProduct() {
     const [preview, setPreview] = useState('');
-    const onImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const [uploadUrl, setUploadUrl] = useState('');
+    const [photoId, setImageId] = useState('');
+    const onImageChange = async (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
         const {
             target: { files },
         } = event;
@@ -29,8 +33,32 @@ export default function AddProduct() {
 
         const url = URL.createObjectURL(file);
         setPreview(url);
+        const { success, result } = await getUploadUrl();
+        if (success) {
+            const { id, uploadURL } = result;
+            setUploadUrl(uploadURL);
+            setImageId(id);
+        }
     };
-    const [state, action] = useFormState(uploadProduct, null);
+    const interceptAction = async (_: any, formData: FormData) => {
+        const file = formData.get('photo');
+        if (!file) {
+            return;
+        }
+        const cloudFlareForm = new FormData();
+        cloudFlareForm.append('file', file);
+        const response = await fetch(uploadUrl, {
+            method: 'POST',
+            body: cloudFlareForm,
+        });
+        if (response.status !== 200) {
+            return;
+        }
+        const photoUrl = `https://imagedelivery.net/O9z9Gvg3_K_y87qLiKMdAA/${photoId}`;
+        formData.set('photo', photoUrl);
+        return uploadProduct(_, formData);
+    };
+    const [state, action] = useFormState(interceptAction, null);
     return (
         <div>
             <form action={action} className="flex flex-col gap-5 p-5">
